@@ -48,14 +48,35 @@ def _extract_text_from_content(msg_obj: dict) -> str:
 
 
 def _iter_messages(sessions_dir: Path, ts_from_ms: int, ts_to_ms: int) -> List[_Message]:
+    """Iterate messages in the given UTC ms range.
+
+    Files are processed in reverse mtime order and we short-circuit once the
+    file's mtime is strictly earlier than the start of the target window.
+    This avoids blindly scanning ancient session files.
+    """
+
+    from datetime import datetime, timezone
+
     pattern = os.path.join(str(sessions_dir), "*.jsonl*")
-    paths = sorted(glob.glob(pattern))
+    paths = [Path(p) for p in glob.glob(pattern)]
+
+    # Sort by mtime desc so recent sessions are scanned first.
+    paths.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+
     out: List[_Message] = []
 
-    for p in paths:
-        path = Path(p)
+    # Compute the UTC datetime corresponding to ts_from_ms once.
+    start_dt_utc = datetime.fromtimestamp(ts_from_ms / 1000.0, tz=timezone.utc)
+
+    for path in paths:
         if path.is_dir():
             continue
+
+        # If file mtime is strictly before the target window start, break.
+        mtime_dt = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+        if mtime_dt < start_dt_utc:
+            break
+
         session_id = path.stem
         try:
             f = path.open("r", encoding="utf-8")
