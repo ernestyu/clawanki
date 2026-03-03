@@ -1,5 +1,7 @@
 # clawanki
 
+**Languages:** English | [中文说明](README_zh.md)
+
 A bridge between OpenClaw session logs and Anki decks.
 
 `clawanki` is a small toolbox that helps you turn marked conversation
