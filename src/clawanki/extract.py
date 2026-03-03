@@ -47,15 +47,17 @@ def _extract_text_from_content(msg_obj: dict) -> str:
     return ""
 
 
-def _iter_messages(sessions_dir: Path, ts_from_ms: int, ts_to_ms: int) -> List[_Message]:
+def _iter_messages(sessions_dir: Path, ts_from_ms: int, ts_to_ms: int, d_from) -> List[_Message]:
     """Iterate messages in the given UTC ms range.
 
-    Files are processed in reverse mtime order and we short-circuit once the
-    file's mtime is strictly earlier than the start of the target window.
-    This avoids blindly scanning ancient session files.
+    Files are processed in reverse mtime order. For *active* session files we
+    short-circuit once the file's mtime is strictly earlier than the start of
+    the target window. For *archived* files (e.g. with `.reset.YYYY-MM-DD` in
+    the name) we may bypass the mtime check but still enforce a lower bound
+    based on the archive date embedded in the filename.
     """
 
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone, date as _date
 
     pattern = os.path.join(str(sessions_dir), "*.jsonl*")
     paths = [Path(p) for p in glob.glob(pattern)]
@@ -72,10 +74,30 @@ def _iter_messages(sessions_dir: Path, ts_from_ms: int, ts_to_ms: int) -> List[_
         if path.is_dir():
             continue
 
-        # If file mtime is strictly before the target window start, break.
+        name = path.name
+        is_reset = ".reset." in name
+
         mtime_dt = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
-        if mtime_dt < start_dt_utc:
-            break
+
+        if not is_reset:
+            # Active file: if mtime is strictly before target window, we can
+            # safely stop scanning older files.
+            if mtime_dt < start_dt_utc:
+                break
+        else:
+            # Archived file: try to extract archive date from name, e.g.
+            # xxxx.reset.2026-02-27T... If the archive date is strictly
+            # before d_from, skip it entirely. Otherwise we must scan it
+            # because it may contain messages for the target window.
+            m = re.search(r"\.reset\.(\d{4}-\d{2}-\d{2})", name)
+            archive_date = None
+            if m:
+                try:
+                    archive_date = _date.fromisoformat(m.group(1))
+                except Exception:
+                    archive_date = None
+            if archive_date is not None and archive_date < d_from:
+                continue
 
         session_id = path.stem
         try:
@@ -184,7 +206,7 @@ def _extract_records_from_message(msg: _Message, marker: str) -> List[Correction
 def extract_corrections(agent_dir: Path, d_from, d_to, marker: str) -> List[CorrectionRecord]:
     ts_from_ms, ts_to_ms = date_range_to_utc_ms(d_from, d_to)
     sessions_dir = agent_dir / "sessions"
-    msgs = _iter_messages(sessions_dir, ts_from_ms, ts_to_ms)
+    msgs = _iter_messages(sessions_dir, ts_from_ms, ts_to_ms, d_from)
     all_records: List[CorrectionRecord] = []
     for msg in msgs:
         all_records.extend(_extract_records_from_message(msg, marker))
