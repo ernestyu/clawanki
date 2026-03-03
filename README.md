@@ -34,6 +34,35 @@ high-quality, personalized language-learning material.
 
 ---
 
+## Packaging & CLI
+
+This project uses `pyproject.toml` as its packaging configuration:
+
+- Project name: `clawanki`.
+- Version: kept in `pyproject.toml` and `clawanki/__init__.py`.
+- CLI entrypoint: defined via `[project.scripts]` as
+  `clawanki = "clawanki.cli:main"`.
+
+For development installs:
+
+```bash
+cd clawanki
+python -m pip install -e .
+
+# After that
+clawanki extract ...
+clawanki build-deck ...
+```
+
+---
+
+## Further reading
+
+- `README_zh.md` — Chinese documentation.
+- `CLI_HELP_SPEC.md` / `CLI_HELP_SPEC_MANSTYLE.md` — detailed CLI behavior and options.
+
+---
+
 ## License
 
 MIT © Ernest Yu

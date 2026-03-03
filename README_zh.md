@@ -228,7 +228,26 @@ CLAWANKI_TEMPLATE_DIR=/path/to/your/templates
 
 ---
 
-## 6. 进一步阅读
+## 6. 打包与 CLI
 
-- `DESIGN.md`：设计草案，包含更详细的架构说明与未来扩展；
+clawanki 使用标准的 `pyproject.toml` 管理包信息和命令行入口：
+
+- 包名：`clawanki`；
+- 版本：在 `pyproject.toml` 与 `clawanki/__init__.py` 中维护；
+- CLI 入口：
+  - `[project.scripts]` 中定义 `clawanki = "clawanki.cli:main"`；
+  - 安装后可以直接运行 `clawanki ...`。
+
+开发模式推荐：
+
+```bash
+cd clawanki
+python -m pip install -e .
+# 之后可以直接用：
+clawanki extract ...
+clawanki build-deck ...
+```
+
+## 7. 进一步阅读
+
 - `CLI_HELP_SPEC.md` / `CLI_HELP_SPEC_MANSTYLE.md`：完整 CLI 参数与行为说明。
