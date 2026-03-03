@@ -1,11 +1,12 @@
 """CLI entrypoint for clawanki.
 
-This is a minimal skeleton that will grow into commands such as:
+This CLI bridges OpenClaw session logs and Anki decks via two main
+subcommands:
 
-    clawanki extract  --date 2026-03-02 --out corrections.json
-    clawanki build-deck --input corrections.json --out deck.apkg
+    clawanki extract     # Phase 1: extract correction pairs to JSONL
+    clawanki build-deck  # Phase 2: build Anki deck (translation + TTS)
 
-For now it only exposes the top-level help and a stub subcommand.
+Additional commands (e.g. from-article) can be added later.
 """
 
 from __future__ import annotations
@@ -21,23 +22,99 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
+    # Phase 1: extract corrections from session logs
     sp_extract = sub.add_parser(
         "extract",
-        help="Extract marked corrections from OpenClaw session logs (stub)",
+        help="Extract ANKI_CORRECTION blocks from OpenClaw session logs into JSONL",
     )
     sp_extract.add_argument(
         "--date",
-        help="Target date (YYYY-MM-DD). If omitted, implementation will choose a default",
+        help="Single date YYYY-MM-DD (local time)",
+    )
+    sp_extract.add_argument(
+        "--from",
+        dest="date_from",
+        help="Start date YYYY-MM-DD (local time)",
+    )
+    sp_extract.add_argument(
+        "--to",
+        dest="date_to",
+        help="End date YYYY-MM-DD (local time)",
+    )
+    sp_extract.add_argument(
+        "--agent-dir",
+        help="Agent directory (default: ~/.openclaw/agents/main)",
+    )
+    sp_extract.add_argument(
+        "--marker",
+        default="ANKI_CORRECTION",
+        help="Logical marker name to extract (default: ANKI_CORRECTION)",
+    )
+    sp_extract.add_argument(
+        "--out",
+        required=True,
+        help="Output JSONL path",
+    )
+
+    # Phase 2: build Anki deck from extracted JSONL
+    sp_build = sub.add_parser(
+        "build-deck",
+        help="Build an Anki deck from extracted JSONL corrections",
+    )
+    sp_build.add_argument(
+        "--source",
+        required=True,
+        help="Source JSONL path produced by 'clawanki extract'",
+    )
+    sp_build.add_argument(
+        "--out",
+        required=True,
+        help="Output .apkg path",
+    )
+    sp_build.add_argument(
+        "--src-lang",
+        default="en",
+        help="Source language code for refined sentences (default: en)",
+    )
+    sp_build.add_argument(
+        "--tgt-lang",
+        default="zh",
+        help="Target language code for card fronts (default: zh)",
+    )
+    sp_build.add_argument(
+        "--use-small-llm",
+        action="store_true",
+        help="Use SMALL_LLM_* to translate refined sentences into fronts",
+    )
+    sp_build.add_argument(
+        "--use-tts",
+        action="store_true",
+        help="Use TTS (edge-tts) to generate ogg audio for Back/Followup",
+    )
+    sp_build.add_argument(
+        "--dedup-mode",
+        choices=["none", "semantic"],
+        default="none",
+        help="Deduplication mode (default: none)",
+    )
+    sp_build.add_argument(
+        "--dedup-threshold",
+        type=float,
+        default=0.9,
+        help="Semantic dedup cosine threshold when --dedup-mode=semantic",
     )
 
     args = parser.parse_args(argv)
 
     if args.command == "extract":
-        sys.stderr.write(
-            "ERROR: 'clawanki extract' is not implemented yet. This is a bootstrap CLI; "
-            "the actual extraction/deck building logic will be added later.\n"
-        )
-        return 2
+        from . import extract as _extract
+
+        return _extract.main(args)
+
+    if args.command == "build-deck":
+        from . import deck as _deck
+
+        return _deck.main(args)
 
     parser.print_help()
     return 0
