@@ -104,7 +104,8 @@ def _load_template_piece(name: str, default: str) -> str:
     if template_dir:
         base = Path(template_dir)
     else:
-        base = Path(__file__).resolve().parent.parent / "templates"
+        # deck.py -> clawanki/ -> src/ -> repo root
+        base = Path(__file__).resolve().parents[2] / "templates"
 
     path = base / {
         "front": "front.html",

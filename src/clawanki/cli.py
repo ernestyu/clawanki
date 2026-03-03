@@ -16,6 +16,15 @@ import sys
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Load project-level .env (if present) before parsing args, without
+    # overriding existing environment variables.
+    try:
+        from .utils import load_project_env
+
+        load_project_env()
+    except Exception:
+        pass
+
     parser = argparse.ArgumentParser(
         prog="clawanki",
         description="Bridge between OpenClaw session logs and Anki decks",
