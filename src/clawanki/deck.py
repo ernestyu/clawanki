@@ -123,22 +123,41 @@ def build_deck(records: List[CorrectionRecord], out_path: Path) -> None:
     my_model = _create_model()
     deck = genanki.Deck(DECK_ID, "clawanki Spoken English Practice")
 
+    media_files: List[str] = []
+
     for rec in records:
         front = rec.front or rec.refined
+
+        # Wrap audio fields in Anki's [sound:...] syntax when present.
+        audio_refine_field = ""
+        if rec.audio_refine:
+            audio_refine_field = f"[sound:{rec.audio_refine}]"
+            media_files.append(rec.audio_refine)
+
+        audio_reply_field = ""
+        if rec.audio_reply:
+            audio_reply_field = f"[sound:{rec.audio_reply}]"
+            media_files.append(rec.audio_reply)
+
         note = genanki.Note(
             model=my_model,
             fields=[
                 front,
                 rec.refined,
                 rec.followup,
-                rec.audio_refine or "",
-                rec.audio_reply or "",
+                audio_refine_field,
+                audio_reply_field,
                 rec.original,
             ],
         )
         deck.add_note(note)
 
-    genanki.Package(deck).write_to_file(str(out_path))
+    package = genanki.Package(deck)
+    if media_files:
+        from .tts_client import _MEDIA_DIR  # type: ignore[attr-defined]
+
+        package.media_files = [str(_MEDIA_DIR / name) for name in media_files]
+    package.write_to_file(str(out_path))
 
 
 def main(args) -> int:
