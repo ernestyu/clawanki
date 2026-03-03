@@ -26,9 +26,9 @@ Typical pipeline:
 The goal is to make it easy to capture real conversations and turn them into
 high-quality, personalized language-learning material.
 
-> Status: bootstrap. Only the project skeleton and CLI entrypoint exist; the
-> actual extraction and deck-building logic will be added in subsequent
-> iterations.
+> Status: ready for early use. Current CLI:
+> - `clawanki extract`     — Phase 1: extract ANKI_CORRECTION blocks to JSONL
+> - `clawanki build-deck`  — Phase 2: build Anki decks (LLM translation + TTS)
 
 ---
 
