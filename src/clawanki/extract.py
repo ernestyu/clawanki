@@ -75,25 +75,27 @@ def _iter_messages(sessions_dir: Path, ts_from_ms: int, ts_to_ms: int, d_from) -
             continue
 
         name = path.name
-        is_reset = ".reset." in name
+        # Two classes of archived files we care about: .reset.* and .delete.*
+        is_archive = ".reset." in name or ".delete." in name
 
         mtime_dt = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
 
-        if not is_reset:
+        if not is_archive:
             # Active file: if mtime is strictly before target window, we can
             # safely stop scanning older files.
             if mtime_dt < start_dt_utc:
                 break
         else:
             # Archived file: try to extract archive date from name, e.g.
-            # xxxx.reset.2026-02-27T... If the archive date is strictly
-            # before d_from, skip it entirely. Otherwise we must scan it
-            # because it may contain messages for the target window.
-            m = re.search(r"\.reset\.(\d{4}-\d{2}-\d{2})", name)
+            # xxxx.reset.2026-02-27T... or xxxx.delete.2026-02-27T...
+            # If the archive date is strictly before d_from, skip it
+            # entirely. Otherwise we must scan it because it may contain
+            # messages for the target window.
+            m = re.search(r"\.(reset|delete)\.(\d{4}-\d{2}-\d{2})", name)
             archive_date = None
             if m:
                 try:
-                    archive_date = _date.fromisoformat(m.group(1))
+                    archive_date = _date.fromisoformat(m.group(2))
                 except Exception:
                     archive_date = None
             if archive_date is not None and archive_date < d_from:
