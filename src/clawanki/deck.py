@@ -92,7 +92,48 @@ def _dedup_semantic(records: List[CorrectionRecord], threshold: float) -> List[C
     return records
 
 
+def _load_template_piece(name: str, default: str) -> str:
+    """Load a template snippet from CLAWANKI_TEMPLATE_DIR or built-in templates.
+
+    name is one of "front", "back", "style".
+    """
+
+    import os
+
+    template_dir = os.environ.get("CLAWANKI_TEMPLATE_DIR")
+    if template_dir:
+        base = Path(template_dir)
+    else:
+        base = Path(__file__).resolve().parent.parent / "templates"
+
+    path = base / {
+        "front": "front.html",
+        "back": "back.html",
+        "style": "style.css",
+    }[name]
+
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return f.read()
+    except Exception:
+        return default
+
+
 def _create_model() -> genanki.Model:
+    # Load templates from external files with sensible fallbacks.
+    default_front = "{{Front}}"
+    default_back = (
+        "{{Front}}<hr id=\"answer\">"
+        "<div><b>{{Back}}</b> {{#Audio_refine}}{{Audio_refine}}{{/Audio_refine}}</div>"
+        "<div>{{Followup}} {{#Audio_reply}}{{Audio_reply}}{{/Audio_reply}}</div>"
+        "<hr><div style=\"color:#888;\">Original: {{Original}}</div>"
+    )
+    default_style = ""
+
+    qfmt = _load_template_piece("front", default_front)
+    afmt = _load_template_piece("back", default_back)
+    css = _load_template_piece("style", default_style)
+
     return genanki.Model(
         MODEL_ID,
         "clawanki Spoken English Model",
@@ -107,15 +148,11 @@ def _create_model() -> genanki.Model:
         templates=[
             {
                 "name": "Spoken Practice Card",
-                "qfmt": "{{Front}}",
-                "afmt": (
-                    "{{Front}}<hr id=\"answer\">"
-                    "<div><b>{{Back}}</b> {{#Audio_refine}}{{Audio_refine}}{{/Audio_refine}}</div>"
-                    "<div>{{Followup}} {{#Audio_reply}}{{Audio_reply}}{{/Audio_reply}}</div>"
-                    "<hr><div style=\"color:#888;\">Original: {{Original}}</div>"
-                ),
+                "qfmt": qfmt,
+                "afmt": afmt,
             }
         ],
+        css=css,
     )
 
 
