@@ -51,8 +51,6 @@ def synthesize(text: str, kind: str) -> str:
         text,
         "--write-media",
         str(out_path),
-        "--output-format",
-        "ogg_vorbis",
     ]
 
     # Best-effort synthesis; errors bubble up to caller to decide.
