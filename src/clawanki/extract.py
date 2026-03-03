@@ -77,9 +77,28 @@ def _iter_messages(sessions_dir: Path, ts_from_ms: int, ts_to_ms: int) -> List[_
                 if role not in {"user", "assistant"}:
                     continue
                 ts = obj.get("timestamp")
-                if not isinstance(ts, (int, float)):
+                ts_ms: int
+                if isinstance(ts, (int, float)):
+                    ts_ms = int(ts)
+                elif isinstance(ts, str):
+                    # ISO8601 string, e.g. "2026-02-27T21:41:21.422Z"
+                    # Convert to UTC ms.
+                    from datetime import datetime, timezone
+
+                    s = ts
+                    if s.endswith("Z"):
+                        s = s.replace("Z", "+00:00")
+                    try:
+                        dt = datetime.fromisoformat(s)
+                    except Exception:
+                        continue
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    else:
+                        dt = dt.astimezone(timezone.utc)
+                    ts_ms = int(dt.timestamp() * 1000)
+                else:
                     continue
-                ts_ms = int(ts)
                 if not (ts_ms >= ts_from_ms and ts_ms < ts_to_ms):
                     continue
                 text = _extract_text_from_content(msg)
