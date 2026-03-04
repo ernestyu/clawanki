@@ -2,7 +2,12 @@
 
 **语言：** [English](README.md) | 中文说明
 
-`clawanki` 是一个将 OpenClaw 会话日志中的英语纠错对话，自动转化为 Anki 牌组的工具集。
+`clawanki` 是一个将 OpenClaw 会话日志中的纠错对话，自动转化为 Anki 牌组的工具集，
+默认示例针对“英语→中文”，但整体设计是 **多语言友好** 的：
+
+- 具体语种由命令行参数 `--src-lang` / `--tgt-lang` 决定，只要 small LLM 能翻译即可；
+- 语音由 `edge-tts` 负责，只要 Azure TTS 支持的语言/voice，都可以通过
+  `CLAWANKI_TTS_LANG` / `CLAWANKI_TTS_VOICES` 配置出来。
 
 典型工作流：
 

@@ -7,6 +7,15 @@ A bridge between OpenClaw session logs and Anki decks.
 `clawanki` is a small toolbox that helps you turn marked conversation
 snippets (e.g. English corrections) into spaced-repetition cards.
 
+Although the examples below use English→Chinese, the pipeline itself is
+**multi‑language by design**:
+
+- The source/target languages are controlled by CLI flags
+  (`--src-lang`, `--tgt-lang`) and whatever your small LLM can translate.
+- Audio generation uses `edge-tts`, so any voice/language supported by
+  Azure TTS can be used as long as you configure it via
+  `CLAWANKI_TTS_LANG` / `CLAWANKI_TTS_VOICES`.
+
 Typical pipeline:
 
 1. You chat with an OpenClaw agent in English.
